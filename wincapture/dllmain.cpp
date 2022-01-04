@@ -220,11 +220,18 @@ BOOL bmp24to32(BITMAP_DATA* bmp, BITMAP_DATA* bmp32) {
     };
     auto src = bmp->pBits;
     auto line = 4 * bmp->Width;
+    bool sp = (bmp->Width * 3 < bmp->Pitch);
     d8 = bmp32->pBits;
-    for (int i = 0; i < bmp->Height; i++, src += bmp->Pitch, d8 += line) {
+    for (int i = sp ? 0 : 1; i < bmp->Height; i++, src += bmp->Pitch, d8 += line) {
         s8 = src;
         for (int j = 0; j < bmp->Width; j++, s8 += 3)
+            d32[j] = *s32 | 0xff000000;
+    }
+    if (!sp) {
+        s8 = src;
+        for (int j = 0; j < bmp->Width - 1; j++, s8 += 3, d32++)
             *d32 = *s32 | 0xff000000;
+        d8[0] = s8[0], d8[1] = s8[1], d8[2] = s8[2], d8[3] = 0xff;
     }
     bmp32->updateDesc(bmp, line, 4);
     return TRUE;
@@ -257,8 +264,7 @@ BOOL bmp32to24(BITMAP_DATA* bmp, BITMAP_DATA* bmp24, UINT* alpha) {
     if (sp) {
         p8 = bmp24->pBits + 3 * bmp->Width;
         for (int i = 0; i < bmp->Height; i++, p8 += pitch)
-            for (int j = 0; j < sp; j++)
-                p8[j] = 0;
+            memset(p8, 0, sp);
     }
     else {
         p8 = dst;
@@ -339,7 +345,7 @@ BYTE GetOSTUThreshold(UINT HistGram[], UINT area) {
         p_i = HistGram[i] * scale;
         mu1 *= q1;
         q1 += p_i;
-        q2 = 1. - q1;
+        q2 = 1.0 - q1;
 
         if (min(q1, q2) < FLT_EPSILON || max(q1, q2) > 1. - FLT_EPSILON)
             continue;
@@ -399,13 +405,13 @@ struct THRESHOLD_PARAMS {
 };
 
 enum ThresholdTypes {
-    THRESH_BINARY = 0, //!< \f[\texttt{dst} (x,y) =  \fork{\texttt{maxval}}{if \(\texttt{src}(x,y) > \texttt{thresh}\)}{0}{otherwise}\f]
-    THRESH_BINARY_INV = 1, //!< \f[\texttt{dst} (x,y) =  \fork{0}{if \(\texttt{src}(x,y) > \texttt{thresh}\)}{\texttt{maxval}}{otherwise}\f]
-    THRESH_TRUNC = 2, //!< \f[\texttt{dst} (x,y) =  \fork{\texttt{threshold}}{if \(\texttt{src}(x,y) > \texttt{thresh}\)}{\texttt{src}(x,y)}{otherwise}\f]
-    THRESH_TOZERO = 3, //!< \f[\texttt{dst} (x,y) =  \fork{\texttt{src}(x,y)}{if \(\texttt{src}(x,y) > \texttt{thresh}\)}{0}{otherwise}\f]
-    THRESH_TOZERO_INV = 4, //!< \f[\texttt{dst} (x,y) =  \fork{0}{if \(\texttt{src}(x,y) > \texttt{thresh}\)}{\texttt{src}(x,y)}{otherwise}\f]
+    THRESH_BINARY = 0,     // dst(x,y) = src(x,y) > thresh ? maxval : 0
+    THRESH_BINARY_INV = 1, // dst(x,y) = src(x,y) > thresh ? 0 : maxval
+    THRESH_TRUNC = 2,      // dst(x,y) = src(x,y) > thresh > threshold : src(x,y)
+    THRESH_TOZERO = 3,     // dst(x,y) = src(x,y) > thresh ? src(x,y) : 0
+    THRESH_TOZERO_INV = 4, // dst(x,y) = src(x,y) > thresh ? 0 : src(x,y)
     THRESH_MASK = 7,
-    THRESH_OTSU = 8, //!< flag, use Otsu algorithm to choose the optimal threshold value
+    THRESH_OTSU = 8,       // flag, use Otsu algorithm to choose the optimal threshold value
     THRESH_ITERATIVEBEST = 16,
     THRESH_MEAN = 32,
     THRESH_ADAPTIVE_SAUVOLA = 64
