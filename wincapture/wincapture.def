@@ -1,0 +1,39 @@
+EXPORTS
+	dxgi_start
+	dxgi_capture
+	dxgi_captureAndSave
+	dxgi_canCachedFrame
+	dxgi_setTimeout
+	dxgi_showCursor
+	dxgi_freeBuffer
+	dxgi_releaseTexture
+	dxgi_reset
+	dxgi_waitScreenChange
+	dxgi_end
+
+	dwm_init
+	dwm_capture
+	dwm_free
+	dwm_releaseTexture
+
+	wgc_init_window
+	wgc_init_monitor
+	wgc_init_monitorindex
+	wgc_capture
+	wgc_free
+	wgc_isBorderRequired
+	wgc_persistent
+	wgc_showCursor
+	wgc_supported
+	wgc_releaseTexture
+
+	findColor
+	findAllColor
+	findMultiColors
+	findAllMultiColors
+	findPic
+	findAllPic
+	copyBitmapData
+	cvtBytes
+	cvtGray
+	threshold
