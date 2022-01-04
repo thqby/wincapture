@@ -398,8 +398,10 @@ void __stdcall wgc_free(struct WGCapture* capture)
 
 BOOL __stdcall wgc_persistent(struct WGCapture* capture, BOOL persistent) {
 	capture->persistent = persistent;
-	if (persistent && !capture->frame_arrived)
+	if (persistent && !capture->frame_arrived) {
 		capture->frame_arrived = capture->frame_pool.FrameArrived(winrt::auto_revoke, { capture, &WGCapture::on_frame_arrived });
+                capture->frame_pool.TryGetNextFrame();
+        }
 	return TRUE;
 }
 
@@ -459,7 +461,8 @@ int __stdcall wgc_capture(struct WGCapture* capture, BOX* box, CAPTURE_DATA* dat
 	if (!capture->frame_arrived) {
 		ResetEvent(capture->capture_signal);
 		capture->frame_arrived = capture->frame_pool.FrameArrived(winrt::auto_revoke, { capture, &WGCapture::on_frame_arrived });
-		::ShowCursor(FALSE);
+		// trigger a new frame
+                ::ShowCursor(FALSE);
 		::ShowCursor(TRUE);
 		capture->frame_pool.TryGetNextFrame();
 		if (WaitForSingleObject(capture->capture_signal, 1000) != WAIT_OBJECT_0)
