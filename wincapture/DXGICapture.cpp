@@ -317,8 +317,6 @@ nextframe:
             if (!box) box = (BOX*)&output->x;
             if (!output->inmemory && (box->x1 < output->box.x1 || box->y1 < output->box.y1 || box->x2 > output->box.x2 || box->y2 > output->box.y2)) {
                 tick = 0;
-                ::ShowCursor(FALSE);
-                ::ShowCursor(TRUE);
                 timeout = timeout < 1000 ? 1000 : timeout;
                 goto nextframe;
             }
@@ -360,8 +358,6 @@ nextframe:
         }
         else if (hr == DXGI_ERROR_ACCESS_LOST && retry_count < 3 && SUCCEEDED(ResetOutput(index))) {
             retry_count++;
-            ::ShowCursor(FALSE);
-            ::ShowCursor(TRUE);
             timeout = timeout < 1000 ? 1000 : timeout, tick = 0;
             goto nextframe;
         }

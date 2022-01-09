@@ -51,6 +51,7 @@ struct WGCapture {
 
 	//void (CALLBACK *callback)(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* texture, uint32_t width, uint32_t height) = nullptr;
 	HANDLE capture_signal;
+	CRITICAL_SECTION cri_sec;
 	struct {
 		winrt::Windows::Foundation::TimeSpan time;
 		BOX box;

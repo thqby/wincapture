@@ -107,8 +107,9 @@ void WGCapture::on_closed(winrt::Windows::Graphics::Capture::GraphicsCaptureItem
 void WGCapture::on_frame_arrived(winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const& sender, winrt::Windows::Foundation::IInspectable const&) {
 	const winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = sender.TryGetNextFrame();
 	const winrt::Windows::Graphics::SizeInt32 frame_content_size = frame.ContentSize();
-
+	EnterCriticalSection(&cri_sec);
 	current_frame = frame;
+	LeaveCriticalSection(&cri_sec);
 	if (!persistent) {
 		SetEvent(capture_signal);
 		frame_arrived.revoke();
@@ -123,7 +124,9 @@ void WGCapture::on_frame_arrived(winrt::Windows::Graphics::Capture::Direct3D11Ca
 
 int WGCapture::get_frame(BOX* box) {
 	HRESULT hr;
+	EnterCriticalSection(&cri_sec);
 	auto frame = current_frame;
+	LeaveCriticalSection(&cri_sec);
 	if (frame) {
 		auto time = frame.SystemRelativeTime();
 		if (time == last_capture.time && (((char)box == last_capture.type) || ((UINT_PTR)box > 65535 && !memcmp(box, &last_capture.box, sizeof(BOX)))))
@@ -301,6 +304,7 @@ static struct WGCapture* wgc_init_internal(HWND window, HMONITOR monitor, BOOL p
 		capture->cursor_visible = true;
 		capture->cursor_visible = !wgc_showCursor(capture, FALSE);
 		wgc_isBorderRequired(capture, false);
+		InitializeCriticalSection(&capture->cri_sec);
 		capture->frame_arrived = frame_pool.FrameArrived(winrt::auto_revoke, { capture, &WGCapture::on_frame_arrived });
 
 		session.StartCapture();
@@ -392,6 +396,7 @@ void __stdcall wgc_free(struct WGCapture* capture)
 		}
 		capture->d3d_device->release();
 		CloseHandle(capture->capture_signal);
+		DeleteCriticalSection(&capture->cri_sec);
 		delete capture;
 	}
 }
@@ -400,8 +405,8 @@ BOOL __stdcall wgc_persistent(struct WGCapture* capture, BOOL persistent) {
 	capture->persistent = persistent;
 	if (persistent && !capture->frame_arrived) {
 		capture->frame_arrived = capture->frame_pool.FrameArrived(winrt::auto_revoke, { capture, &WGCapture::on_frame_arrived });
-                capture->frame_pool.TryGetNextFrame();
-        }
+		capture->frame_pool.TryGetNextFrame();
+	}
 	return TRUE;
 }
 
@@ -461,9 +466,6 @@ int __stdcall wgc_capture(struct WGCapture* capture, BOX* box, CAPTURE_DATA* dat
 	if (!capture->frame_arrived) {
 		ResetEvent(capture->capture_signal);
 		capture->frame_arrived = capture->frame_pool.FrameArrived(winrt::auto_revoke, { capture, &WGCapture::on_frame_arrived });
-		// trigger a new frame
-                ::ShowCursor(FALSE);
-		::ShowCursor(TRUE);
 		capture->frame_pool.TryGetNextFrame();
 		if (WaitForSingleObject(capture->capture_signal, 1000) != WAIT_OBJECT_0)
 			return -2;
