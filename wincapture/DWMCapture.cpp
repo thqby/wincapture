@@ -45,8 +45,6 @@ HRESULT DWMCapture::Init()
     return S_OK;
 }
 
-#include <stdint.h>
-bool get_client_box(HWND window, uint32_t width, uint32_t height, D3D11_BOX* client_box);
 HRESULT DWMCapture::CaptureWindow(HWND hwndTarget, BOX* box, CAPTURE_DATA* data) {
     HANDLE textureHandle = GetDWMSharedHandle(hwndTarget);
     if (!textureHandle)
@@ -62,11 +60,29 @@ HRESULT DWMCapture::CaptureWindow(HWND hwndTarget, BOX* box, CAPTURE_DATA* data)
         return hr;
     D3D11_TEXTURE2D_DESC desc;
     D3D11_BOX dbox;
+    RECT window_rect{}, client_rect{};
+    UINT left, top;
     bool range = false;
     tex->GetDesc(&desc);
     int w = desc.Width, h = desc.Height;
-    if ((UINT_PTR)box == 1 && get_client_box(hwndTarget, desc.Width, desc.Height, &dbox))
-        range = true, w = dbox.right - dbox.left, h = dbox.bottom - dbox.top;
+    if ((UINT_PTR)box < 65536) {
+        if (GetWindowRect(hwndTarget, &window_rect)) {
+            if ((UINT_PTR)box == 1 && GetClientRect(hwndTarget, &client_rect)) {
+                MapWindowPoints(hwndTarget, NULL, (LPPOINT)&client_rect, 1);
+                range = true, w = client_rect.right, h = client_rect.bottom;
+                left = client_rect.left > window_rect.left ? client_rect.left - window_rect.left : 0;
+                top = client_rect.top > window_rect.top ? client_rect.top - window_rect.top : 0;
+                w = client_rect.right, h = client_rect.bottom;
+                dbox = D3D11_BOX{ left,top,0,left + w,top + h,1 };
+            }
+            else if (DwmGetWindowAttribute(hwndTarget, DWMWA_EXTENDED_FRAME_BOUNDS, &client_rect, sizeof(client_rect)) == S_OK)
+                if (client_rect.left > window_rect.left) {
+                    range = true, left = client_rect.left - window_rect.left, top = client_rect.top - window_rect.top;
+                    w = client_rect.right - client_rect.left, h = client_rect.bottom - client_rect.top;
+                    dbox = D3D11_BOX{ left,top,0,left + w,top + h,1 };
+                }
+        }
+    }
     else if (box && box->x1 >= 0 && box->y1 >= 0 && box->x2 <= w && box->y2 <= h) {
         dbox = D3D11_BOX{ (UINT)box->x1, (UINT)box->y1, 0, (UINT)box->x2, (UINT)box->y2, 1 };
         range = true, w = dbox.right - dbox.left, h = dbox.bottom - dbox.top;

@@ -1,6 +1,7 @@
 #pragma once
 #include "d3d_device.h"
 #include "types.h"
+#include <dwmapi.h>
 
 class DWMCapture
 {

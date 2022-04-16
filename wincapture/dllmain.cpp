@@ -1017,12 +1017,12 @@ UINT __stdcall findAllPic(POINT poses[], UINT maxpic, BITMAP_DATA* image, BITMAP
                 templ->fillData(tmp.pBits, nullptr, tmp.Pitch);
                 templ = &tmp;
             }
-            d8 = tmp.pBits;
+            d8 = templ->pBits;
             trans_color &= 0xffffff;
-            for (int i = 0; i < tmp.Height; d8 += tmp.Pitch)
-                for (int j = 0; j < tmp.Width; j++)
-                    if ((*d32 & 0xffffff) == trans_color)
-                        dcl->a = 0;
+            for (int i = 0; i < templ->Height; d8 += templ->Pitch, i++)
+                for (int j = 0; j < templ->Width; j++)
+                    if ((d32[j] & 0xffffff) == trans_color)
+                        dcl[j].a = 0;
         }
     }
     switch (direction)
