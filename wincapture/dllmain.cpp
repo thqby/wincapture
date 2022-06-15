@@ -585,13 +585,11 @@ BOOL __stdcall cvtBytes(BITMAP_DATA* src, BITMAP_DATA* dst, short bytes) {
                 for (int i = 0; i < src->Height; i++, d += line)
                     memset(d, 0, sp);
             }
-            else {
+            else if (bytes == 3) {
                 d8 = d;
                 for (int j = 0; j < src->Width - 1; j++, d8 += bytes)
                     *d32 = s[j] << 16 | s[j] << 8 | s[j] | 0xff000000;
                 d8[0] = d8[1] = d8[2] = s[src->Width - 1];
-                if (bytes == 4)
-                    d8[3] = 0xff;
             }
             dst->updateDesc(src, line, bytes);
             return TRUE;

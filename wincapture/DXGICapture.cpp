@@ -554,7 +554,7 @@ HRESULT DXGICapture::WaitChanged(int timeout, BOX* box, int index) {
 }
 
 HRESULT DXGICapture::InitTexture(DXGI_INFO* output) {
-    D3D11_TEXTURE2D_DESC frameDescriptor;
+    D3D11_TEXTURE2D_DESC frameDescriptor{};
     frameDescriptor.Usage = D3D11_USAGE_STAGING;
     frameDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
     frameDescriptor.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
